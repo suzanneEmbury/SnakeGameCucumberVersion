@@ -1,0 +1,73 @@
+<project name="snakegame-cucumber" basedir="." default="runcukes">
+
+    <property name="prod.src.dir"     value="src"/>
+	<property name="test.src.dir"     value="test"/>
+	<property name="stepdefs.dir"     value="living_documentation/step_definitions"/>
+	<property name="features.dir"     value="living_documentation/features"/>
+    <property name="bin.dir"          value="bin"/>
+    <property name="lib.dir"          value="lib"/>
+    <property name="cuke.results.dir" value="${basedir}/cucumber-junit-report"/>
+    <property name="steps.package"    value="uk.ac.manchester.cs.comp33711.snakegamecucumber.steps"/>
+
+    <target name="classpath">
+        <path id="classpath">
+            <fileset dir="${lib.dir}">
+                <include name="**/*.jar"/>
+            </fileset>
+            <pathelement location="${stepdefs.dir}"/>
+            <pathelement location="${bin.dir}"/>
+        </path>
+    </target>
+
+    <target name="compile" depends="classpath">
+        <javac srcdir="${prod.src.dir}" destdir="${bin.dir}" classpathref="classpath" includeantruntime="false"/>
+    </target>
+
+    <target name="compile-test" depends="compile,classpath">
+        <javac srcdir="${test.src.dir}" destdir="${bin.dir}" classpathref="classpath" includeantruntime="false"/>
+    </target>
+        	
+    <target name="compile-steps" depends="compile,classpath">
+        <javac srcdir="${stepdefs.dir}" destdir="${bin.dir}" classpathref="classpath" includeantruntime="false"/>
+    </target>
+
+    <target name="runcukes" depends="compile-steps">
+        <mkdir dir="${cuke.results.dir}"/>
+        <java classname="cucumber.api.cli.Main" fork="true" failonerror="false" resultproperty="cucumber.exitstatus">
+            <classpath refid="classpath"/>
+            <arg value="--plugin"/>
+            <arg value="junit:${cuke.results.dir}/cucumber-junit-report.xml"/>
+            <arg value="--plugin"/>
+            <arg value="pretty"/>
+            <arg value="--plugin"/>
+            <arg value="html:${cuke.results.dir}/cucumber-html-report"/>
+            <arg value="--glue"/>
+            <arg value="${steps.package}"/>
+            <arg value="${features.dir}"/>
+        </java>
+
+        <junitreport todir="${cuke.results.dir}">
+            <fileset dir="${cuke.results.dir}">
+                <include name="cucumber-junit-report.xml"/>
+            </fileset>
+            <report format="frames" todir="${cuke.results.dir}/cucumber-html-report"/>
+        </junitreport>
+
+        <fail message="Cucumber failed">
+            <condition>
+                <not>
+                    <equals arg1="${cucumber.exitstatus}" arg2="0"/>
+                </not>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="clean">
+    	<delete dir="${bin.dir}"/>
+        <delete dir="${cuke.results.dir}"/>
+    </target>
+
+    <target name="clobber" depends="clean">
+        <delete dir="${lib.dir}"/>
+    </target>
+</project>
